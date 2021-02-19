@@ -1,5 +1,5 @@
 # Crypto Balance Check Bot
-A slack custom integration using a heroku scheduler to update slack channel with balance info from various exchagnes.
+A slack custom integration using a heroku scheduler to update a slack channel with balance info from various exchagnes.
 
 ![Example of working bot](example.png)
 
