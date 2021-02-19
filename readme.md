@@ -1,8 +1,16 @@
 # Crypto Balance Check Bot
-A slack custom integration using a heroku scheduler to update a slack channel with balance info from various exchagnes.
 
-![Example of working bot](example.png)
+<img src="images/crypto-balance-check.png" alt="Banner" align="center"/>
 
+[comment]: <> (![Banner]&#40;images/crypto-balance-check.png&#41;)
+
+<img src="images/example.png" align="right" width="400" height="380" alt="Example of working bot">
+Crypto Balance Check is a slack integration that will send periodic messages to inform users of their:
+- positions by exchange
+- aggregated positions
+- total position value (currently in CAD)
+
+[comment]: <> (![Example of working bot]&#40;images/example.png&#41;)
 
 ## Requirements:
 - Heroku account
@@ -10,7 +18,7 @@ A slack custom integration using a heroku scheduler to update a slack channel wi
 - git 
 - Slack workspace with admin privilege
 
-## Getting Started
+## Deploying to Heroku
 - Create a slack custom integration if you have not already
 ```bash
 git clone git@github.com:zahin-mohammad/crypto-balance-check.git
@@ -42,6 +50,10 @@ heroku addons:create scheduler:standard
 heroku addons:open scheduler
 # Under Run Command: python3 ./__main__.py
 ```
+
+## Notes
+- The messages are hardcoded to `Zahin`
+- Currently, non CAD currencies aren't supported
 
 [comment]: <> (- Setup Firebase)
 
