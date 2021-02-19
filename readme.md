@@ -1,7 +1,8 @@
 # Crypto Balance Check Bot
 
-<img src="images/crypto-balance-check.png" alt="Banner" align="center"/>
-
+<p align="center">
+    <img src="images/crypto-balance-check-white.png" alt="Banner"/>
+</p>
 [comment]: <> (![Banner]&#40;images/crypto-balance-check.png&#41;)
 
 <img src="images/example.png" align="right" width="400" height="380" alt="Example of working bot">
