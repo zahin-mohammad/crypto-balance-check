@@ -1,17 +1,16 @@
-# Crypto Balance Check Bot
+# Crypto Balance Check Slack Bot
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/X8X71S1S7)
 
 <p align="center">
     <img src="images/crypto-balance-check-white.png" alt="Banner"/>
 </p>
-[comment]: <> (![Banner]&#40;images/crypto-balance-check.png&#41;)
 
-<img src="images/example.png" align="right" width="400" height="380" alt="Example of working bot">
+<img src="images/example.png" align="right" width="400" alt="Example of working bot">
 Crypto Balance Check is a slack integration that will send periodic messages to inform users of their:
 - positions by exchange
 - aggregated positions
 - total position value (currently in CAD)
 
-[comment]: <> (![Example of working bot]&#40;images/example.png&#41;)
 
 ## Requirements:
 - Heroku account
