@@ -6,7 +6,6 @@ A slack custom integration using a heroku scheduler to update a slack channel wi
 
 ## Requirements:
 - Heroku account
-- Firebase account
 - Heroku CLI
 - git 
 - Slack workspace with admin privilege
