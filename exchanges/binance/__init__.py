@@ -16,9 +16,34 @@ NAME = 'BINANCE'
 BASE_URL = 'https://api.binance.com'
 ONE_MINUTE = 60
 
+BTCUSDT = 'BTCUSDT'
+ETHUSDT = 'ETHUSDT'
+
 
 def get_timestamp():
     return int(time.time() * 1000)
+
+
+def get_fiat_map():
+    r = requests.get('https://web-api.coinmarketcap.com/v1/fiat/map')
+    data = r.json()['data']
+    '''
+    symbol -> {
+        id
+        name
+        sign
+        symbol
+    }
+    '''
+    return {item['symbol']: item for item in data}
+
+
+# TODO: Remove Hardcoded Strings
+def get_usdt_to_fiat(fiat_currency_id: int = 2784):
+    r = requests.get(
+        f'https://web-api.coinmarketcap.com/v1/tools/price-conversion?amount=1&convert_id=825&id={fiat_currency_id}')
+    data = r.json()['data']
+    return 1 / data['quote']['825']['price']
 
 
 class Binance(Exchange):
@@ -79,34 +104,51 @@ class Binance(Exchange):
 
     def get_fiat_value(self, currency: str = 'CAD') -> float:
         logging.info(f"{self.name()} get_fiat_value")
+
+        fiat_map = get_fiat_map()
+        if currency not in fiat_map:
+            logging.error(f'Invalid currency {currency}')
+            exit()
+        usdt_to_fiat = get_usdt_to_fiat(fiat_map[currency]['id'])
         total_usdt = 0
+
         try:
             positions = self.get_positions()
             price_response = self.__send_public_request('/api/v3/ticker/24hr')
-            price_map = {symbol_info['symbol']: float(symbol_info['prevClosePrice']) for symbol_info in
-                         price_response}
+            price_set = {symbol_info['symbol']for symbol_info in price_response}
+            usdt_val = 0
+
             for symbol, amount in positions.items():
                 if symbol == 'USDT':
-                    total_usdt += amount
-                else:
+                    usdt_val = amount
+                elif symbol + 'USDT' in price_set:
                     pair = symbol + 'USDT'
-                    # Fallbacks
+                    average_price_symbol_usdt = float(self.__send_public_request(f'/api/v3/avgPrice?symbol={pair}')['price'])
+                    usdt_val = amount * average_price_symbol_usdt
+                # For weird symbols like BETH
+                # Check BETHBTC
+                # Check BETHETH
+                else:
                     btc_pair = symbol + 'BTC'
                     eth_pair = symbol + 'ETH'
-                    if pair in price_map:
-                        total_usdt += amount * price_map[pair]
-                    elif btc_pair in price_map:
-                        amount_in_btc = amount * price_map[btc_pair]
-                        total_usdt += amount_in_btc * price_map["BTCUSDT"]
-                    elif eth_pair in price_map:
-                        amount_in_eth = amount * price_map[eth_pair]
-                        total_usdt += amount_in_eth * price_map["ETHUSDT"]
-            # TODO: Remove hardcoded check
-            if currency == 'CAD':
-                return total_usdt * 1.27
+                    if btc_pair in price_set:
+                        average_price_btc_pair = float(
+                            self.__send_public_request(f'/api/v3/avgPrice?symbol={btc_pair}')['price'])
+                        average_price_btc_usdt = float(
+                            self.__send_public_request(f'/api/v3/avgPrice?symbol={BTCUSDT}')['price'])
+                        usdt_val = amount * average_price_btc_pair * average_price_btc_usdt
+                    elif eth_pair in price_set:
+                        average_price_eth_pair = float(
+                            self.__send_public_request(f'/api/v3/avgPrice?symbol={eth_pair}')['price'])
+                        average_price_eth_usdt = float(
+                            self.__send_public_request(f'/api/v3/avgPrice?symbol={ETHUSDT}')['price'])
+                        usdt_val = amount * average_price_eth_pair * average_price_eth_usdt
+
+                # print(f'{symbol}: {amount} -> {currency}: {usdt_val * usdt_to_fiat}')
+                total_usdt += usdt_val
         except Exception as e:
             logging.error(e)
-        return total_usdt
+        return total_usdt * usdt_to_fiat
 
     def get_positions(self) -> positions:
         logging.info(f"{self.name()} get_positions")
@@ -150,9 +192,10 @@ class Binance(Exchange):
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
+
     load_dotenv(dotenv_path='../../.env')
     logger.setLevel(logging.DEBUG)
-
+    # print(get_usdt_to_fiat())
     exchange = Binance()
     positions = exchange.get_positions()
     print(json.dumps(positions, indent=2))
