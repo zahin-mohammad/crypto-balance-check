@@ -21,7 +21,7 @@ class Slack:
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"Hi Zahin, the total `{currency}` value of your positions is `${total_fiat_value}`!\n"
+                "text": f"Hi Zahin, the total `{currency}` value of your positions is $`{total_fiat_value}`!\n"
             }
         }]
         requests.post(self.__webhook, data=json.dumps({"blocks": message_blocks}), headers={
