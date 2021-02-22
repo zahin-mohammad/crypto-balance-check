@@ -16,11 +16,12 @@ class Slack:
             sys.exit()
 
     def publish_total_fiat_value(self, total_fiat_value: float, currency: str = 'CAD'):
+        total_fiat_value = "{:,}".format(total_fiat_value)
         message_blocks = [{
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"Hi Zahin, the total `{currency}` value of your positions is `{total_fiat_value}`!\n"
+                "text": f"Hi Zahin, the total `{currency}` value of your positions is `${total_fiat_value}`!\n"
             }
         }]
         requests.post(self.__webhook, data=json.dumps({"blocks": message_blocks}), headers={
@@ -36,6 +37,7 @@ class Slack:
         }]
         position_info = ''
         for symbol, amount in all_positions.items():
+            amount = "{:,}".format(amount)
             position_info += f"`{symbol}`:\t{amount}\n"
 
         message_blocks.append({
@@ -60,6 +62,7 @@ class Slack:
         for exchange, all_positions in all_positions_by_exchange.items():
             position_info = ''
             for symbol, amount in all_positions.items():
+                amount = "{:,}".format(amount)
                 position_info += f"\t`{symbol}`:\t{amount}\n"
             exchange_position_info = f'{exchange}:\n{position_info}'
             message_blocks.append({
