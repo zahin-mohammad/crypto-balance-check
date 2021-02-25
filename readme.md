@@ -33,11 +33,15 @@ git push heroku master
 - Setup Environment Variables:
 - These can also be configured on the web client for heroku
 ```bash
+# Mandatory
 heroku config:set SLACK_WEBHOOK="{slack incoming web hook}" 
+# Optional
 heroku config:set BINANCE_API_KEY="{binance api_key}" 
 heroku config:set BINANCE_API_SECRET="{binance api_secret}" 
 heroku config:set COINBASE_API_KEY="{coinbase api_key}" 
 heroku config:set COINBASE_API_SECRET="{coinbase_api_secret}"
+heroku config:set NEWTON_CLIENT_ID="{newton client_id}" 
+heroku config:set NEWTON_API_SECRET="{newton api_key}" 
 heroku config:set FIAT_CURRENCY="{e.g. CAD}"
 ```
 - Verify that the script works
