@@ -7,9 +7,8 @@
 
 <img src="images/crypto-balance-check-blurred.png" align="right" width="400" alt="Example of working bot">
 Crypto Balance Check is a slack integration that will send periodic messages to inform users of their:
-- positions by exchange
-- aggregated positions
-- total position value (currently in CAD)
+- Their crypto balance per exchange
+- Their fiat value of their crypto balance
 
 
 ## Requirements:
