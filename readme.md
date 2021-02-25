@@ -5,7 +5,7 @@
     <img src="images/crypto-balance-check-white.png" alt="Banner"/>
 </p>
 
-<img src="images/example.png" align="right" width="400" alt="Example of working bot">
+<img src="images/crypto-balance-check-blurred.png" align="right" width="400" alt="Example of working bot">
 Crypto Balance Check is a slack integration that will send periodic messages to inform users of their:
 - positions by exchange
 - aggregated positions
