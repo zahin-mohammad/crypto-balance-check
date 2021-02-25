@@ -38,6 +38,7 @@ heroku config:set BINANCE_API_KEY="{binance api_key}"
 heroku config:set BINANCE_API_SECRET="{binance api_secret}" 
 heroku config:set COINBASE_API_KEY="{coinbase api_key}" 
 heroku config:set COINBASE_API_SECRET="{coinbase_api_secret}"
+heroku config:set FIAT_CURRENCY="{e.g. CAD}"
 ```
 - Verify that the script works
 ```bash
@@ -50,10 +51,6 @@ heroku addons:create scheduler:standard
 heroku addons:open scheduler
 # Under Run Command: python3 ./__main__.py
 ```
-
-## Notes
-- The messages are hardcoded to `Zahin`
-- Currently, non CAD currencies aren't supported
 
 [comment]: <> (- Setup Firebase)
 

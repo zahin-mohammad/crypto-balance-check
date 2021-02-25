@@ -22,9 +22,12 @@ class Slack:
         total_fiat = 0
         max_len_mssg = 0
         LEVEL = 2
+        currency = ""
         for exchange, position_map in positions_by_exchange.items():
             mssgs.append(exchange.ljust(10))
             for position in position_map.values():
+                if not currency:
+                    currency = position.fiat
                 total_fiat += position.total_fiat()
                 message = "".ljust(LEVEL) + position.symbol.ljust(5) \
                           + "".ljust(17) \
@@ -41,7 +44,7 @@ class Slack:
                 max_len_mssg = max(max_len_mssg, len(message))
                 mssgs.append(message)
             mssgs.append("-"*(LEVEL+5+17+10+16))
-        total_fiat = "$" + "{:,}".format(round(total_fiat, 2)) + " CAD"
+        total_fiat = "$" + "{:,}".format(round(total_fiat, 2)) + f" {currency}"
         mssgs.append("".ljust(LEVEL + 5 + 17) + " Total ".ljust(10) + str(total_fiat).ljust(16))
 
         for m in mssgs:

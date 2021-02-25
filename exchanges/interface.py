@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Dict, Any
 
 
@@ -33,7 +34,7 @@ class Position():
 
 class Exchange:
     def __init__(self, fiat_currency: str = 'CAD'):
-        self.fiat = fiat_currency
+        self.fiat = os.getenv('FIAT_CURRENCY') or 'CAD'
         self.DUST_THRESHOLD = 0.0000001
 
     def name(self) -> str:
