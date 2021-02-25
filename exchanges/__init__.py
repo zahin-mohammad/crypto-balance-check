@@ -5,6 +5,7 @@ from typing import Dict
 from exchanges.interface import Exchange, Position
 from exchanges.binance import Binance
 from exchanges.coinbase import Coinbase
+from exchanges.newton import Newton
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO, datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger(__name__)
@@ -14,7 +15,8 @@ class Exchanges:
     def __init__(self):
         self.__exchanges: [Exchange] = [
             Binance(),
-            Coinbase()
+            Coinbase(),
+            Newton()
         ]
 
     def get_all_positions(self) -> [Position]:

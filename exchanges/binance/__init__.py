@@ -3,10 +3,10 @@ import logging
 import os
 import traceback
 from typing import Dict, Set
-import requests
 
 from exchanges.binance.auth import BinanceAuth
 from exchanges.interface import Exchange, Position
+from exchanges.utils import get_usdt_to_fiat
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO, datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger(__name__)
@@ -22,28 +22,6 @@ ETHUSDT = 'ETHUSDT'
 USDT = 'USDT'
 BTC = 'BTC'
 ETH = 'ETH'
-
-
-def get_fiat_map() -> Dict[str, str]:
-    r = requests.get('https://web-api.coinmarketcap.com/v1/fiat/map')
-    data = r.json()['data']
-    '''
-    symbol -> {
-        id
-        name
-        sign
-        symbol
-    }
-    '''
-    return {item['symbol']: item['id'] for item in data}
-
-
-def get_usdt_to_fiat(fiat: str = 'CAD') -> float:
-    fiat_map = get_fiat_map()
-    r = requests.get(
-        f'https://web-api.coinmarketcap.com/v1/tools/price-conversion?amount=1&convert_id=825&id={fiat_map[fiat]}')
-    data = r.json()['data']
-    return 1 / data['quote']['825']['price']
 
 
 class Binance(Exchange):
