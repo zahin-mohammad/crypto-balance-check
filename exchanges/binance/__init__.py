@@ -1,30 +1,30 @@
-import hashlib
-import hmac
 import json
 import logging
 import os
-import time
-from urllib.parse import urlencode
+import traceback
+from typing import Dict, Set
 import requests
-from ratelimit import limits
-from exchanges.interface import Exchange, positions
+
+from exchanges.binance.auth import BinanceAuth
+from exchanges.interface import Exchange, Position
 
 logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO, datefmt='%m/%d/%Y %I:%M:%S %p')
 logger = logging.getLogger(__name__)
 
+GET = 'GET'
+ACCOUNT = '/api/v3/account'
+MARGIN_ACCOUNT = '/sapi/v1/margin/isolated/account'
+TICKER = '/api/v3/ticker/24hr'
 NAME = 'BINANCE'
-BASE_URL = 'https://api.binance.com'
-ONE_MINUTE = 60
 
 BTCUSDT = 'BTCUSDT'
 ETHUSDT = 'ETHUSDT'
+USDT = 'USDT'
+BTC = 'BTC'
+ETH = 'ETH'
 
 
-def get_timestamp():
-    return int(time.time() * 1000)
-
-
-def get_fiat_map():
+def get_fiat_map() -> Dict[str, str]:
     r = requests.get('https://web-api.coinmarketcap.com/v1/fiat/map')
     data = r.json()['data']
     '''
@@ -35,13 +35,13 @@ def get_fiat_map():
         symbol
     }
     '''
-    return {item['symbol']: item for item in data}
+    return {item['symbol']: item['id'] for item in data}
 
 
-# TODO: Remove Hardcoded Strings
-def get_usdt_to_fiat(fiat_currency_id: int = 2784):
+def get_usdt_to_fiat(fiat: str = 'CAD') -> float:
+    fiat_map = get_fiat_map()
     r = requests.get(
-        f'https://web-api.coinmarketcap.com/v1/tools/price-conversion?amount=1&convert_id=825&id={fiat_currency_id}')
+        f'https://web-api.coinmarketcap.com/v1/tools/price-conversion?amount=1&convert_id=825&id={fiat_map[fiat]}')
     data = r.json()['data']
     return 1 / data['quote']['825']['price']
 
@@ -49,155 +49,84 @@ def get_usdt_to_fiat(fiat_currency_id: int = 2784):
 class Binance(Exchange):
 
     def __init__(self):
-        self.__API_KEY = os.getenv('BINANCE_API_KEY')
-        self.__API_SECRET = os.getenv('BINANCE_API_SECRET')
+        super().__init__()
+        self.binance_auth = BinanceAuth(os.getenv('BINANCE_API_KEY'), os.getenv('BINANCE_API_SECRET'))
         logging.info(f"Initialized {self.name()} Exchange")
-
-    def __hashing(self, query_string):
-        return hmac.new(self.__API_SECRET.encode('utf-8'), query_string.encode('utf-8'), hashlib.sha256).hexdigest()
-
-    def __dispatch_request(self, http_method):
-        session = requests.Session()
-        session.headers.update({
-            'Content-Type': 'application/json;charset=utf-8',
-            'X-MBX-APIKEY': self.__API_KEY
-        })
-        return {
-            'GET': session.get,
-            'DELETE': session.delete,
-            'PUT': session.put,
-            'POST': session.post,
-        }.get(http_method, 'GET')
-
-    # used for sending request requires the signature
-    @limits(calls=10, period=ONE_MINUTE)
-    def __send_signed_request(self, http_method, url_path, payload=None):
-        if payload is None:
-            payload = {}
-        query_string = urlencode(payload, True)
-        if query_string:
-            query_string = "{}&timestamp={}".format(query_string, get_timestamp())
-        else:
-            query_string = 'timestamp={}'.format(get_timestamp())
-
-        url = BASE_URL + url_path + '?' + query_string + '&signature=' + self.__hashing(query_string)
-        print("{} {}".format(http_method, url))
-        params = {'url': url, 'params': {}}
-        response = self.__dispatch_request(http_method)(**params)
-        return response.json()
-
-    # used for sending public data request
-    @limits(calls=10, period=ONE_MINUTE)
-    def __send_public_request(self, url_path, payload=None):
-        if payload is None:
-            payload = {}
-        query_string = urlencode(payload, True)
-        url = BASE_URL + url_path
-        if query_string:
-            url = url + '?' + query_string
-        print("{}".format(url))
-        response = self.__dispatch_request('GET')(url=url)
-        return response.json()
 
     def name(self) -> str:
         return NAME
 
-    def get_fiat_value(self, currency: str = 'CAD') -> float:
-        logging.info(f"{self.name()} get_fiat_value")
+    def __get_price_map(self) -> Set:
+        price_response = self.binance_auth.send_public_request(TICKER)
+        return {symbol_info['symbol'] for symbol_info in price_response}
 
-        fiat_map = get_fiat_map()
-        if currency not in fiat_map:
-            logging.error(f'Invalid currency {currency}')
-            exit()
-        usdt_to_fiat = get_usdt_to_fiat(fiat_map[currency]['id'])
-        total_usdt = 0
+    def __to_usdt(self, base: str, supported_pairs) -> float:
+        if base == USDT:
+            return 1
+        elif (pair := base + USDT) in supported_pairs:
+            return float(
+                self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={pair}')['price'])
+        elif (pair := base + BTC) in supported_pairs:
+            symbol_to_btc = float(
+                self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={pair}')['price'])
+            btc_to_usdt = float(
+                self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={BTCUSDT}')['price'])
+            return symbol_to_btc * btc_to_usdt
+        elif (pair := base + ETH) in supported_pairs:
+            symbol_to_eth = float(
+                self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={pair}')['price'])
+            eth_to_usdt = float(
+                self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={ETHUSDT}')['price'])
+            return symbol_to_eth * eth_to_usdt
+        return 1
 
-        try:
-            positions = self.get_positions()
-            price_response = self.__send_public_request('/api/v3/ticker/24hr')
-            price_set = {symbol_info['symbol']for symbol_info in price_response}
-            usdt_val = 0
-
-            for symbol, amount in positions.items():
-                if symbol == 'USDT':
-                    usdt_val = amount
-                elif symbol + 'USDT' in price_set:
-                    pair = symbol + 'USDT'
-                    average_price_symbol_usdt = float(self.__send_public_request(f'/api/v3/avgPrice?symbol={pair}')['price'])
-                    usdt_val = amount * average_price_symbol_usdt
-                # For weird symbols like BETH
-                # Check BETHBTC
-                # Check BETHETH
-                else:
-                    btc_pair = symbol + 'BTC'
-                    eth_pair = symbol + 'ETH'
-                    if btc_pair in price_set:
-                        average_price_btc_pair = float(
-                            self.__send_public_request(f'/api/v3/avgPrice?symbol={btc_pair}')['price'])
-                        average_price_btc_usdt = float(
-                            self.__send_public_request(f'/api/v3/avgPrice?symbol={BTCUSDT}')['price'])
-                        usdt_val = amount * average_price_btc_pair * average_price_btc_usdt
-                    elif eth_pair in price_set:
-                        average_price_eth_pair = float(
-                            self.__send_public_request(f'/api/v3/avgPrice?symbol={eth_pair}')['price'])
-                        average_price_eth_usdt = float(
-                            self.__send_public_request(f'/api/v3/avgPrice?symbol={ETHUSDT}')['price'])
-                        usdt_val = amount * average_price_eth_pair * average_price_eth_usdt
-
-                # print(f'{symbol}: {amount} -> {currency}: {usdt_val * usdt_to_fiat}')
-                total_usdt += usdt_val
-        except Exception as e:
-            logging.error(e)
-        return total_usdt * usdt_to_fiat
-
-    def get_positions(self) -> positions:
+    def get_positions(self) -> Dict[str, Position]:
         logging.info(f"{self.name()} get_positions")
         ret = {}
         try:
-            response = self.__send_signed_request('GET', '/api/v3/account')
-            price_response = self.__send_public_request('/api/v3/ticker/24hr')
-            price_map = {symbol_info['symbol']: float(symbol_info['prevClosePrice']) for symbol_info in
-                         price_response}
-
-            balances = response["balances"]
-            for balance in balances:
-                balance_total = float(balance['free']) + float(balance['locked'])
-                if balance_total <= 0.0000001:
-                    continue
-                ret[balance['asset']] = balance_total
-
-            response = self.__send_signed_request('GET', '/sapi/v1/margin/isolated/account')
-            for asset in response['assets']:
-                base = asset['baseAsset']['asset']
-                base_in_btc = float(asset['baseAsset']['netAssetOfBtc'])
-                quote_in_btc = float(asset['quoteAsset']['netAssetOfBtc'])  # Usually negative
-
-                total_in_btc = base_in_btc + quote_in_btc
-
-                base_total = total_in_btc
-                if base != 'BTC':
-                    base_to_btc_price = price_map[base + "BTC"]
-                    base_total = total_in_btc / base_to_btc_price
-                if base_total <= 0.00001:
-                    continue
-
-                if base in ret:
-                    ret[base] = ret[base] + base_total
-                else:
-                    ret[base] = base_total
+            spot_balances = self.binance_auth.send_signed_request(GET, ACCOUNT)['balances']
+            margin_balances = self.binance_auth.send_signed_request(GET, MARGIN_ACCOUNT)['assets']
+            price_map = self.__get_price_map()
+            usdt_to_fiat = get_usdt_to_fiat(self.fiat)
         except Exception as e:
+            traceback.print_exc()
             logging.error(e)
+            return {}
+
+        for balance in spot_balances:
+            symbol = balance['asset']
+            spot_amount = float(balance['free']) + float(balance['locked']) + ret.get(symbol, 0)
+            if spot_amount <= self.DUST_THRESHOLD:
+                continue
+            spot_amount_in_fiat = spot_amount * self.__to_usdt(symbol, price_map) * usdt_to_fiat
+            ret[symbol] = Position(symbol, self.fiat, spot_amount, spot_amount_in_fiat, 0, 0)
+
+        for asset in margin_balances:
+            symbol = asset['baseAsset']['asset']
+            base_in_btc = float(asset['baseAsset']['netAssetOfBtc'])
+            quote_in_btc = float(asset['quoteAsset']['netAssetOfBtc'])  # Usually negative
+            total_in_btc = base_in_btc + quote_in_btc
+
+            margin_amount = total_in_btc  # Default
+            if margin_amount <= self.DUST_THRESHOLD:
+                continue
+            if symbol != BTC:
+                base_to_btc = float(
+                    self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={symbol + BTC}')['price'])
+                margin_amount = total_in_btc / base_to_btc
+            margin_amount_in_fiat = margin_amount * self.__to_usdt(symbol, price_map) * usdt_to_fiat
+            position = ret.get(symbol, Position(symbol, self.fiat))
+            position.margin_amount = margin_amount
+            position.margin_amount_in_fiat = margin_amount_in_fiat
+            ret[symbol] = position
         return ret
 
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
-
     load_dotenv(dotenv_path='../../.env')
     logger.setLevel(logging.DEBUG)
-    # print(get_usdt_to_fiat())
+
     exchange = Binance()
     positions = exchange.get_positions()
-    print(json.dumps(positions, indent=2))
-    fiat_value = exchange.get_fiat_value()
-    print(fiat_value)
+    {print(json.dumps(position.to_dict(), indent=2)) for _, position in positions.items()}

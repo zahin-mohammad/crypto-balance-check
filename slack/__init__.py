@@ -2,8 +2,10 @@ import json
 import logging
 import os
 import sys
+from typing import Dict
+
 import requests
-from exchanges import positions, exchange_positions
+from exchanges import Position
 
 logger = logging.getLogger(__name__)
 
@@ -15,62 +17,47 @@ class Slack:
             logger.error('FORGOT SLACK WEBHOOK')
             sys.exit()
 
-    def publish_total_fiat_value(self, total_fiat_value: float, currency: str = 'CAD'):
-        total_fiat_value = "{:,}".format(total_fiat_value)
+    def publish_all_positions_by_exchange(self, positions_by_exchange: Dict[str, Dict[str, Position]]):
+        mssgs: [str] = []
+        total_fiat = 0
+        max_len_mssg = 0
+        for exchange, position_map in positions_by_exchange.items():
+            mssgs.append(exchange.ljust(10))
+            for position in position_map.values():
+                total_fiat += position.total_fiat()
+                message = "".ljust(5) + position.symbol.ljust(10) \
+                          + " Spot ".ljust(10) + str(round(position.spot_amount, 5)).ljust(10) \
+                          + " Margin ".ljust(10) + str(round(position.margin_amount, 5)).ljust(10) \
+                          + " Fiat ".ljust(10) + str(round(position.total_fiat(), 2)).ljust(10)
+                max_len_mssg = max(max_len_mssg, len(message))
+                mssgs.append(message.ljust(100))
+        total_fiat = "$" + "{:,}".format(round(total_fiat, 2)) + " CAD"
+        mssgs.append("".ljust(55) + " Total ".ljust(10) + str(total_fiat).ljust(15))
+
+        for m in mssgs:
+            print(m)
         message_blocks = [{
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"Hi Zahin, the total `{currency}` value of your positions is $`{total_fiat_value}`!\n"
+                "text": "```" + "\n".join(mssgs) + "```"
             }
         }]
-        requests.post(self.__webhook, data=json.dumps({"blocks": message_blocks}), headers={
-            'Content-Type': 'application/json'}, verify=True)
-
-    def publish_all_positions(self, all_positions: positions):
-        message_blocks = [{
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "Hi Zahin, here are your positions!\n"
-            }
-        }]
-        position_info = ''
-        for symbol, amount in all_positions.items():
-            amount = "{:,}".format(amount)
-            position_info += f"`{symbol}`:\t{amount}\n"
-
-        message_blocks.append({
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": f"{position_info}"
-            }
-        })
-
-        requests.post(self.__webhook, data=json.dumps({"blocks": message_blocks}), headers={
-            'Content-Type': 'application/json'}, verify=True)
-
-    def publish_all_positions_by_exchange(self, all_positions_by_exchange: exchange_positions):
-        message_blocks = [{
-            "type": "section",
-            "text": {
-                "type": "mrkdwn",
-                "text": "Hi Zahin, here are your positions by exchange!\n"
-            }
-        }]
-        for exchange, all_positions in all_positions_by_exchange.items():
-            position_info = ''
-            for symbol, amount in all_positions.items():
-                amount = "{:,}".format(amount)
-                position_info += f"\t`{symbol}`:\t{amount}\n"
-            exchange_position_info = f'{exchange}:\n{position_info}'
-            message_blocks.append({
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"{exchange_position_info}"
-                }
-            })
-        requests.post(self.__webhook, data=json.dumps({"blocks": message_blocks}), headers={
-            'Content-Type': 'application/json'}, verify=True)
+        # for exchange, all_positions in all_positions_by_exchange.items():
+        #     position_info = ''
+        #     for symbol, amount in all_positions.items():
+        #         amount = "{:,}".format(amount)
+        #         position_info += f"\t`{symbol}`:\t{amount}\n"
+        #     exchange_position_info = f'{exchange}:\n{position_info}'
+        #     message_blocks.append({
+        #         "type": "section",
+        #         "text": {
+        #             "type": "mrkdwn",
+        #             "text": f"{exchange_position_info}"
+        #         }
+        #     })
+        r = requests.post(self.__webhook,
+                          data=json.dumps({"text": "Your Crypto Summary", "blocks": message_blocks}),
+                          headers={'Content-Type': 'application/json'}, verify=True)
+        print(r.status_code)
+        print(r.text)
