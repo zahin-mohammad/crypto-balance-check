@@ -51,7 +51,11 @@ class Binance(Exchange):
     def __init__(self):
         super().__init__()
         self.binance_auth = BinanceAuth(os.getenv('BINANCE_API_KEY'), os.getenv('BINANCE_API_SECRET'))
-        logging.info(f"Initialized {self.name()} Exchange")
+        self.__valid = os.getenv('BINANCE_API_KEY') and os.getenv('BINANCE_API_SECRET')
+        if self.__valid:
+            logging.info(f"Initialized {self.name()} Exchange")
+        else:
+            logging.warning(f"{self.name()} Is Missing Configuration")
 
     def name(self) -> str:
         return NAME
@@ -81,6 +85,8 @@ class Binance(Exchange):
         return 1
 
     def get_positions(self) -> Dict[str, Position]:
+        if not self.__valid:
+            return {}
         logging.info(f"{self.name()} get_positions")
         ret = {}
         try:

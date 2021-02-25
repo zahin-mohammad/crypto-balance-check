@@ -28,7 +28,11 @@ class Coinbase(Exchange):
         self.__auth = CoinbaseWalletAuth(
             api_key=os.getenv('COINBASE_API_KEY'),
             secret_key=os.getenv('COINBASE_API_SECRET'))
-        logging.info(f"Initialized {self.name()} Exchange")
+        self.__valid = os.getenv('COINBASE_API_KEY') and os.getenv('COINBASE_API_SECRET')
+        if self.__valid:
+            logging.info(f"Initialized {self.name()} Exchange")
+        else:
+            logging.warning(f"{self.name()} Is Missing Configuration")
 
     def name(self) -> str:
         return NAME
@@ -66,6 +70,8 @@ class Coinbase(Exchange):
         return ret
 
     def get_positions(self) -> Dict[str, Position]:
+        if not self.__valid:
+            return {}
         logging.info(f"{self.name()} get_positions")
         exchange_rates = self.__get_exchange_rates()
         accounts = self.__get_accounts()
