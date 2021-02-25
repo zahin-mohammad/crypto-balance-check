@@ -43,19 +43,6 @@ class Slack:
                 "text": "```" + "\n".join(mssgs) + "```"
             }
         }]
-        # for exchange, all_positions in all_positions_by_exchange.items():
-        #     position_info = ''
-        #     for symbol, amount in all_positions.items():
-        #         amount = "{:,}".format(amount)
-        #         position_info += f"\t`{symbol}`:\t{amount}\n"
-        #     exchange_position_info = f'{exchange}:\n{position_info}'
-        #     message_blocks.append({
-        #         "type": "section",
-        #         "text": {
-        #             "type": "mrkdwn",
-        #             "text": f"{exchange_position_info}"
-        #         }
-        #     })
         r = requests.post(self.__webhook,
                           data=json.dumps({"text": "Your Crypto Summary", "blocks": message_blocks}),
                           headers={'Content-Type': 'application/json'}, verify=True)
