@@ -42,6 +42,9 @@ heroku config:set COINBASE_API_KEY="{coinbase api_key}"
 heroku config:set COINBASE_API_SECRET="{coinbase_api_secret}"
 heroku config:set NEWTON_CLIENT_ID="{newton client_id}" 
 heroku config:set NEWTON_API_SECRET="{newton api_key}" 
+heroku config:set KUCOIN_API_KEY="{kucoin api_key}" 
+heroku config:set KUCOIN_API_SECRET="{kucoin api_secret}" 
+heroku config:set KUCOIN_API_PASSPHRASE="{kucoin api_api_passphrase}" 
 heroku config:set FIAT_CURRENCY="{e.g. CAD}"
 ```
 - Verify that the script works
