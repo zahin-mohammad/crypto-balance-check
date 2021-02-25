@@ -39,9 +39,5 @@ class Exchange:
     def name(self) -> str:
         raise Exception('Interface Method')
 
-    #
-    # def get_fiat_value(self, currency: str) -> float:
-    #     raise Exception('Interface Method')
-
     def get_positions(self) -> Dict[str, Position]:
         raise Exception('Interface Method')
