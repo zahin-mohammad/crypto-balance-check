@@ -13,8 +13,12 @@ class Position():
             "Margin Amount": self.margin_amount,
             "Margin Amount in Fiat": self.margin_amount_in_fiat
         }
+
     def total_fiat(self) -> float:
         return self.margin_amount_in_fiat + self.spot_amount_in_fiat
+
+    def total_base(self) -> float:
+        return self.spot_amount + self.margin_amount
 
     def __init__(self, symbol: str, fiat: str, spot_amount: float = 0, spot_amount_in_fiat: float = 0, margin_amount: float = 0,
                  margin_amount_in_fiat: float = 0):
