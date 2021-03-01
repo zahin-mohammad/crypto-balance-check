@@ -26,7 +26,7 @@ class BinanceAuth:
         self.__API_SECRET = api_secret
 
     # used for sending request requires the signature
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, max_tries=10)
     @limits(calls=10, period=ONE_MINUTE)
     def send_signed_request(self, http_method, url_path, payload=None):
         if payload is None:
@@ -44,7 +44,7 @@ class BinanceAuth:
         return response.json()
 
     # used for sending public data request
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, max_tries=10)
     @limits(calls=10, period=ONE_MINUTE)
     def send_public_request(self, url_path, payload=None):
         if payload is None:
