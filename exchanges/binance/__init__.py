@@ -86,23 +86,26 @@ class Binance(Exchange):
             ret[symbol] = Position(symbol, self.fiat, spot_amount, spot_amount_in_fiat, 0, 0)
 
         for asset in margin_balances:
-            symbol = asset['baseAsset']['asset']
-            base_in_btc = float(asset['baseAsset']['netAssetOfBtc'])
-            quote_in_btc = float(asset['quoteAsset']['netAssetOfBtc'])  # Usually negative
-            total_in_btc = base_in_btc + quote_in_btc
-
-            margin_amount = total_in_btc  # Default
-            if margin_amount <= self.DUST_THRESHOLD:
+            base_symbol = asset['baseAsset']['asset']
+            quote_symbol = asset['quoteAsset']['asset']
+            base_amount = float(asset['baseAsset']['netAsset'])
+            quote_amount = float(asset['quoteAsset']['netAsset'])
+            # Amounts can be negative
+            if abs(base_amount) <= self.DUST_THRESHOLD and abs(quote_amount) <= self.DUST_THRESHOLD:
                 continue
-            if symbol != BTC:
-                base_to_btc = float(
-                    self.binance_auth.send_public_request(f'/api/v3/avgPrice?symbol={symbol + BTC}')['price'])
-                margin_amount = total_in_btc / base_to_btc
-            margin_amount_in_fiat = margin_amount * self.__to_usdt(symbol, price_map) * usdt_to_fiat
-            position = ret.get(symbol, Position(symbol, self.fiat))
-            position.margin_amount = margin_amount
-            position.margin_amount_in_fiat = margin_amount_in_fiat
-            ret[symbol] = position
+
+            base_in_fiat = base_amount * self.__to_usdt(base_symbol, price_map) * usdt_to_fiat
+            position = ret.get(base_symbol, Position(base_symbol, self.fiat))
+            position.margin_amount += base_amount
+            position.margin_amount_in_fiat += base_in_fiat
+            ret[base_symbol] = position
+
+            quote_in_fiat = quote_amount * self.__to_usdt(quote_symbol, price_map) * usdt_to_fiat
+            print(quote_in_fiat)
+            position = ret.get(quote_symbol, Position(quote_symbol, self.fiat))
+            position.margin_amount += quote_amount
+            position.margin_amount_in_fiat += quote_in_fiat
+            ret[quote_symbol] = position
         return ret
 
 

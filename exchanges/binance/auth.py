@@ -27,7 +27,7 @@ class BinanceAuth:
 
     # used for sending request requires the signature
     @on_exception(expo, RateLimitException, max_tries=10)
-    @limits(calls=10, period=ONE_MINUTE)
+    @limits(calls=20, period=ONE_MINUTE)
     def send_signed_request(self, http_method, url_path, payload=None):
         if payload is None:
             payload = {}
@@ -45,7 +45,7 @@ class BinanceAuth:
 
     # used for sending public data request
     @on_exception(expo, RateLimitException, max_tries=10)
-    @limits(calls=10, period=ONE_MINUTE)
+    @limits(calls=20, period=ONE_MINUTE)
     def send_public_request(self, url_path, payload=None):
         if payload is None:
             payload = {}
