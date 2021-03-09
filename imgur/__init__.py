@@ -28,6 +28,7 @@ class Imgur:
         dates = [dt.datetime.fromtimestamp(ts) for ts in x]
 
         plt.plot(dates, y)
+        plt.tight_layout()
         plt.gcf().autofmt_xdate()
         plt.title(title)
         plt.xlabel(xlabel)
