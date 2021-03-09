@@ -101,7 +101,6 @@ class Binance(Exchange):
             ret[base_symbol] = position
 
             quote_in_fiat = quote_amount * self.__to_usdt(quote_symbol, price_map) * usdt_to_fiat
-            print(quote_in_fiat)
             position = ret.get(quote_symbol, Position(quote_symbol, self.fiat))
             position.margin_amount += quote_amount
             position.margin_amount_in_fiat += quote_in_fiat

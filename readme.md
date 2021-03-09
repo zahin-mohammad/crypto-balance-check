@@ -29,11 +29,20 @@ heroku login
 heroku create
 git push heroku master
 ```
+- Setup Firebase 
+    - Create a firebase project at https://firebase.google.com/
+    - Create a database
+    - Download a private key from settings -> Service Accounts
+    - Rename this file to firestore-admin.json
+- Setup Environment Variables:
+- These can also be configured on the web client for heroku
 - Setup Environment Variables:
 - These can also be configured on the web client for heroku
 ```bash
 # Mandatory
-heroku config:set SLACK_WEBHOOK="{slack incoming web hook}" 
+heroku config:set SLACK_WEBHOOK="..." 
+heroku config:set IMGUR_CLIENT_ID="..." 
+heroku config:set IMGUR_CLIENT_SECRET="..." 
 # Optional
 heroku config:set BINANCE_API_KEY="{binance api_key}" 
 heroku config:set BINANCE_API_SECRET="{binance api_secret}" 
@@ -46,6 +55,7 @@ heroku config:set KUCOIN_API_SECRET="{kucoin api_secret}"
 heroku config:set KUCOIN_API_PASSPHRASE="{kucoin api_api_passphrase}" 
 heroku config:set FIAT_CURRENCY="{e.g. CAD}"
 ```
+- `FIRESTORE_ADMIN` environment variable needs to be manually updated in the heroku UI with the contents of `firestore-admin.json`
 - Verify that the script works
 ```bash
 heroku run python3 ./__main__.py
