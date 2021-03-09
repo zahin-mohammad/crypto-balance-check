@@ -11,7 +11,7 @@ FIRESTORE_JSON = os.getenv('FIRESTORE_ADMIN')
 if FIRESTORE_JSON is None:
     logger.warning("LOCAL USE")
 else:
-    with open("../firestore-admin.json", "w") as jsonFile:
+    with open("firestore-admin.json", "w") as jsonFile:
         jsonFile.write(FIRESTORE_JSON)
 
 cred = credentials.Certificate('firestore-admin.json')
