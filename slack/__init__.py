@@ -17,6 +17,18 @@ class Slack:
             logger.error('FORGOT SLACK WEBHOOK')
             sys.exit()
 
+    def publish_url(self, link:str):
+        message_blocks = [{
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"Balance Graph\n{link}"
+            }
+        }]
+        r = requests.post(self.__webhook,
+                          data=json.dumps({"text": "Your Crypto Balance Graph", "blocks": message_blocks}),
+                          headers={'Content-Type': 'application/json'}, verify=True)
+
     def publish_all_positions_by_exchange(self, positions_by_exchange: Dict[str, Dict[str, Position]]):
         mssgs: [str] = []
         total_fiat = 0
