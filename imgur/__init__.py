@@ -25,11 +25,13 @@ class Imgur:
 
     def _create_graph(self, x, y, title, xlabel, ylabel):
         fig, ax = plt.subplots(1, dpi=300)
-        dates = [dt.datetime.fromtimestamp(ts) for ts in x]
-
-        plt.plot(dates, y)
-        plt.tight_layout()
-        plt.gcf().autofmt_xdate()
+        # TODO: Use actual x....
+        x = [i for i in range(len(y))]
+        ax.plot(x, y, alpha=0.5)
+        ax.axes.xaxis.set_visible(False)
+        ax.yaxis.set_major_formatter('${x:1.2f}')
+        ax.yaxis.set_tick_params(which='major', labelcolor='green',
+                                 labelleft=False, labelright=True)
         plt.title(title)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
