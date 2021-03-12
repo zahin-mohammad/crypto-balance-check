@@ -1,9 +1,12 @@
 import logging
 import time
+from datetime import date
+
 import firebase_admin
 import os
 import io
 from firebase_admin import credentials, firestore
+from scipy.interpolate import interpolate
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +34,9 @@ class FireStore:
         balance_json = doc_ref.get().to_dict()
         if balance_json is None:
             return []
-        return [(int(t), balance) for t, balance in balance_json.items()]
+        balances = [(int(t), balance) for t, balance in balance_json.items()]
+        balances.sort(key=lambda x: x[0])
+        return balances
 
     def update_historic_balances(self, positions_by_exchange, current_time: int = int(time.time())):
         total_fiat = 0
@@ -45,37 +50,24 @@ class FireStore:
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
-    import json
-
-    load_dotenv(dotenv_path='../../.env')
-    firestore = FireStore()
-
-    balances = firestore.get_historic_balances('TEST')
-    print(balances)
-    # for i in range(20):
-    #     firestore.update_historic_balances('TEST', 10 + i, i)
-    balances = firestore.get_historic_balances('TEST')
-    print(balances)
-
     import matplotlib.pyplot as plt
+    load_dotenv(dotenv_path='../.env')
 
-    fig, ax = plt.subplots(1, figsize=(4, 4), dpi=300)
-    plt.plot([balance[0] for balance in balances], [balance[1] for balance in balances])
-    plt.title('title name')
-    plt.xlabel('xAxis name')
-    plt.ylabel('yAxis name')
+    firestore = FireStore()
+    balances = firestore.get_historic_balances()
 
-    fig.canvas.draw()
-    temp_canvas = fig.canvas
+    plt.style.use('ggplot')
+    fig, ax = plt.subplots(1, dpi=300)
+    x, y = [i for i in range(len(balances))], [balance[1] for balance in balances]
+
+    ax.plot(x, y, alpha=0.5)
+    ax.axes.xaxis.set_visible(False)
+    ax.yaxis.set_major_formatter('${x:1.2f}')
+    ax.yaxis.set_tick_params(which='major',labelleft=False, labelright=True)
+    start = date.fromtimestamp(balances[0][0])
+    end = date.fromtimestamp(balances[-1][0])
+    plt.title(f'Crypto Balance: {start} - {end}')
+    plt.xlabel('Time')
+    plt.ylabel('CAD $')
     plt.close()
-    
-    import PIL
-    pil_image = PIL.Image.frombytes('RGB', temp_canvas.get_width_height(),  temp_canvas.tostring_rgb())
-    print(pil_image)
-    
-    print(pil_image.size)
-
-    in_mem_file = io.BytesIO()
-
-    pil_image.save(in_mem_file, format='JPEG')
-    print(in_mem_file.getvalue())
+    fig.show()

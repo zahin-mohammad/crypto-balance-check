@@ -1,7 +1,7 @@
 import logging
 import os
 import matplotlib.pyplot as plt
-import datetime as dt
+from datetime import date
 from imgurpython import ImgurClient
 
 plt.style.use('ggplot')
@@ -23,18 +23,18 @@ class Imgur:
             logger.warning('IMGUR INITIALIZED')
             self.client = ImgurClient(client_id, client_secret)
 
-    def _create_graph(self, x, y, title, xlabel, ylabel):
+    def _create_graph(self, x, y):
+        if len(x) == 0 or len(y) == 0:
+            return ""
+        start, end = date.fromtimestamp(x[0]), date.fromtimestamp(x[-1])
         fig, ax = plt.subplots(1, dpi=300)
-        # TODO: Use actual x....
-        x = [i for i in range(len(y))]
         ax.plot(x, y, alpha=0.5)
         ax.axes.xaxis.set_visible(False)
         ax.yaxis.set_major_formatter('${x:1.2f}')
-        ax.yaxis.set_tick_params(which='major', labelcolor='green',
-                                 labelleft=False, labelright=True)
-        plt.title(title)
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
+        ax.yaxis.set_tick_params(which='major', labelleft=False, labelright=True)
+        plt.title(f'Crypto Balance: {start} - {end}')
+        plt.xlabel('Time')
+        plt.ylabel(f'{self.__fiat} $')
         fig.savefig(temp_file_name)
         plt.close()
         return temp_file_name
