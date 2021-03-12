@@ -1,12 +1,9 @@
 import logging
 import time
 from datetime import date
-
 import firebase_admin
 import os
-import io
 from firebase_admin import credentials, firestore
-from scipy.interpolate import interpolate
 
 logger = logging.getLogger(__name__)
 
