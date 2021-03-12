@@ -49,7 +49,7 @@ class Imgur:
             'title': title,
             'description': f'{x[0]} to {x[-1]}'
         }
-        filename = self._create_graph(x, y, title, xlabel, ylabel)
+        filename = self._create_graph(x, y)
         logger.warning('UPLOADING IMAGE')
         return self.client.upload_from_path(filename, config)['link']
 
