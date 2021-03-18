@@ -25,12 +25,16 @@ BALANCE = 'BALANCE'
 class FireStore:
     def __init__(self):
         self.__fiat = os.getenv('FIAT_CURRENCY')
-
-    def get_historic_balances(self):
+    
+    def _get_historic_balances_map(self):
         doc_ref = FIRESTORE_CLIENT.collection(BALANCE).document(self.__fiat)
         balance_json = doc_ref.get().to_dict()
         if balance_json is None:
-            return []
+            return {}
+        return balance_json
+
+    def get_historic_balances(self):
+        balance_json = self._get_historic_balances_map()
         balances = [(int(t), balance) for t, balance in balance_json.items()]
         balances.sort(key=lambda x: x[0])
         return balances
@@ -44,14 +48,22 @@ class FireStore:
         doc_ref = FIRESTORE_CLIENT.collection(BALANCE).document(self.__fiat)
         doc_ref.set({str(current_time): total_fiat}, merge=True)
 
+    def delete_below(self, threshold: float):
+        balance_map = self._get_historic_balances_map()
+        for t, value in balance_map.items():
+            if value > threshold:
+                continue
+            doc_ref = FIRESTORE_CLIENT.collection(BALANCE).document(self.__fiat)
+            doc_ref.set({str(t): firestore.DELETE_FIELD}, merge=True)
 
 if __name__ == "__main__":
     from dotenv import load_dotenv
     import matplotlib.pyplot as plt
     load_dotenv(dotenv_path='../.env')
 
-    firestore = FireStore()
-    balances = firestore.get_historic_balances()
+    f_client = FireStore()
+    f_client.delete_below(10000)
+    balances = f_client.get_historic_balances()
 
     plt.style.use('ggplot')
     fig, ax = plt.subplots(1, dpi=300)
